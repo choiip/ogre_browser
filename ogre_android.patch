@@ -1,0 +1,781 @@
+diff --git a/CMake/Packages/FindFreetype.cmake b/CMake/Packages/FindFreetype.cmake
+new file mode 100644
+index 000000000..0e6d33645
+--- /dev/null
++++ b/CMake/Packages/FindFreetype.cmake
+@@ -0,0 +1,199 @@
++# Distributed under the OSI-approved BSD 3-Clause License.  See accompanying
++# file Copyright.txt or https://cmake.org/licensing for details.
++
++#.rst:
++# FindFreetype
++# ------------
++#
++# Find the FreeType font renderer includes and library.
++#
++# Imported Targets
++# ^^^^^^^^^^^^^^^^
++#
++# This module defines the following :prop_tgt:`IMPORTED` target:
++#
++# ``Freetype::Freetype``
++#   The Freetype ``freetype`` library, if found
++#
++# Result Variables
++# ^^^^^^^^^^^^^^^^
++#
++# This module will set the following variables in your project:
++#
++# ``FREETYPE_FOUND``
++#   true if the Freetype headers and libraries were found
++# ``FREETYPE_INCLUDE_DIRS``
++#   directories containing the Freetype headers. This is the
++#   concatenation of the variables:
++#
++#   ``FREETYPE_INCLUDE_DIR_ft2build``
++#     directory holding the main Freetype API configuration header
++#   ``FREETYPE_INCLUDE_DIR_freetype2``
++#     directory holding Freetype public headers
++# ``FREETYPE_LIBRARIES``
++#   the library to link against
++# ``FREETYPE_VERSION_STRING``
++#   the version of freetype found (since CMake 2.8.8)
++#
++# Hints
++# ^^^^^
++#
++# The user may set the environment variable ``FREETYPE_DIR`` to the root
++# directory of a Freetype installation.
++
++# Created by Eric Wing.
++# Modifications by Alexander Neundorf.
++# This file has been renamed to "FindFreetype.cmake" instead of the correct
++# "FindFreeType.cmake" in order to be compatible with the one from KDE4, Alex.
++
++# Ugh, FreeType seems to use some #include trickery which
++# makes this harder than it should be. It looks like they
++# put ft2build.h in a common/easier-to-find location which
++# then contains a #include to a more specific header in a
++# more specific location (#include <freetype/config/ftheader.h>).
++# Then from there, they need to set a bunch of #define's
++# so you can do something like:
++# #include FT_FREETYPE_H
++# Unfortunately, using CMake's mechanisms like include_directories()
++# wants explicit full paths and this trickery doesn't work too well.
++# I'm going to attempt to cut out the middleman and hope
++# everything still works.
++
++set(FREETYPE_FIND_ARGS
++  HINTS
++    ENV FREETYPE_DIR
++  PATHS
++    /usr/X11R6
++    /usr/local/X11R6
++    /usr/local/X11
++    /usr/freeware
++    ENV GTKMM_BASEPATH
++    [HKEY_CURRENT_USER\\SOFTWARE\\gtkmm\\2.4;Path]
++    [HKEY_LOCAL_MACHINE\\SOFTWARE\\gtkmm\\2.4;Path]
++)
++
++find_path(
++  FREETYPE_INCLUDE_DIR_ft2build
++  ft2build.h
++  ${FREETYPE_FIND_ARGS}
++  PATH_SUFFIXES
++    include/freetype2
++    include
++    freetype2
++)
++
++find_path(
++  FREETYPE_INCLUDE_DIR_freetype2
++  NAMES
++    freetype/config/ftheader.h
++    config/ftheader.h
++  ${FREETYPE_FIND_ARGS}
++  PATH_SUFFIXES
++    include/freetype2
++    include
++    freetype2
++)
++
++if(NOT FREETYPE_LIBRARY)
++  find_library(FREETYPE_LIBRARY_RELEASE
++    NAMES
++      freetype
++      libfreetype
++      freetype219
++    ${FREETYPE_FIND_ARGS}
++    PATH_SUFFIXES
++      lib
++  )
++  find_library(FREETYPE_LIBRARY_DEBUG
++    NAMES
++      freetyped
++      libfreetyped
++      freetype219d
++    ${FREETYPE_FIND_ARGS}
++    PATH_SUFFIXES
++      lib
++  )
++  include(${CMAKE_CURRENT_LIST_DIR}/SelectLibraryConfigurations.cmake)
++  select_library_configurations(FREETYPE)
++endif()
++
++unset(FREETYPE_FIND_ARGS)
++
++# set the user variables
++if(FREETYPE_INCLUDE_DIR_ft2build AND FREETYPE_INCLUDE_DIR_freetype2)
++  set(FREETYPE_INCLUDE_DIRS "${FREETYPE_INCLUDE_DIR_ft2build};${FREETYPE_INCLUDE_DIR_freetype2}")
++  list(REMOVE_DUPLICATES FREETYPE_INCLUDE_DIRS)
++endif()
++set(FREETYPE_LIBRARIES "${FREETYPE_LIBRARY}")
++
++if(EXISTS "${FREETYPE_INCLUDE_DIR_freetype2}/freetype/freetype.h")
++  set(FREETYPE_H "${FREETYPE_INCLUDE_DIR_freetype2}/freetype/freetype.h")
++elseif(EXISTS "${FREETYPE_INCLUDE_DIR_freetype2}/freetype.h")
++  set(FREETYPE_H "${FREETYPE_INCLUDE_DIR_freetype2}/freetype.h")
++endif()
++
++if(FREETYPE_INCLUDE_DIR_freetype2 AND FREETYPE_H)
++  file(STRINGS "${FREETYPE_H}" freetype_version_str
++       REGEX "^#[\t ]*define[\t ]+FREETYPE_(MAJOR|MINOR|PATCH)[\t ]+[0-9]+$")
++
++  unset(FREETYPE_VERSION_STRING)
++  foreach(VPART MAJOR MINOR PATCH)
++    foreach(VLINE ${freetype_version_str})
++      if(VLINE MATCHES "^#[\t ]*define[\t ]+FREETYPE_${VPART}[\t ]+([0-9]+)$")
++        set(FREETYPE_VERSION_PART "${CMAKE_MATCH_1}")
++        if(FREETYPE_VERSION_STRING)
++          string(APPEND FREETYPE_VERSION_STRING ".${FREETYPE_VERSION_PART}")
++        else()
++          set(FREETYPE_VERSION_STRING "${FREETYPE_VERSION_PART}")
++        endif()
++        unset(FREETYPE_VERSION_PART)
++      endif()
++    endforeach()
++  endforeach()
++endif()
++
++include(${CMAKE_CURRENT_LIST_DIR}/FindPackageHandleStandardArgs.cmake)
++
++find_package_handle_standard_args(
++  Freetype
++  REQUIRED_VARS
++    FREETYPE_LIBRARY
++    FREETYPE_INCLUDE_DIRS
++  VERSION_VAR
++    FREETYPE_VERSION_STRING
++)
++
++mark_as_advanced(
++  FREETYPE_INCLUDE_DIR_freetype2
++  FREETYPE_INCLUDE_DIR_ft2build
++)
++
++if(Freetype_FOUND)
++  if(NOT TARGET Freetype::Freetype)
++    add_library(Freetype::Freetype UNKNOWN IMPORTED)
++    set_target_properties(Freetype::Freetype PROPERTIES
++      INTERFACE_INCLUDE_DIRECTORIES "${FREETYPE_INCLUDE_DIRS}")
++
++    if(FREETYPE_LIBRARY_RELEASE)
++      set_property(TARGET Freetype::Freetype APPEND PROPERTY
++        IMPORTED_CONFIGURATIONS RELEASE)
++      set_target_properties(Freetype::Freetype PROPERTIES
++        IMPORTED_LINK_INTERFACE_LANGUAGES_RELEASE "C"
++        IMPORTED_LOCATION_RELEASE "${FREETYPE_LIBRARY_RELEASE}")
++    endif()
++
++    if(FREETYPE_LIBRARY_DEBUG)
++      set_property(TARGET Freetype::Freetype APPEND PROPERTY
++        IMPORTED_CONFIGURATIONS DEBUG)
++      set_target_properties(Freetype::Freetype PROPERTIES
++        IMPORTED_LINK_INTERFACE_LANGUAGES_DEBUG "C"
++        IMPORTED_LOCATION_DEBUG "${FREETYPE_LIBRARY_DEBUG}")
++    endif()
++
++    if(NOT FREETYPE_LIBRARY_RELEASE AND NOT FREETYPE_LIBRARY_DEBUG)
++      set_target_properties(Freetype::Freetype PROPERTIES
++        IMPORTED_LINK_INTERFACE_LANGUAGES "C"
++        IMPORTED_LOCATION "${FREETYPE_LIBRARY}")
++    endif()
++  endif()
++endif()
+diff --git a/CMake/Packages/FindPackageHandleStandardArgs.cmake b/CMake/Packages/FindPackageHandleStandardArgs.cmake
+new file mode 100644
+index 000000000..67f6bd6f2
+--- /dev/null
++++ b/CMake/Packages/FindPackageHandleStandardArgs.cmake
+@@ -0,0 +1,386 @@
++# Distributed under the OSI-approved BSD 3-Clause License.  See accompanying
++# file Copyright.txt or https://cmake.org/licensing for details.
++
++#[=======================================================================[.rst:
++FindPackageHandleStandardArgs
++-----------------------------
++
++This module provides a function intended to be used in :ref:`Find Modules`
++implementing :command:`find_package(<PackageName>)` calls.  It handles the
++``REQUIRED``, ``QUIET`` and version-related arguments of ``find_package``.
++It also sets the ``<PackageName>_FOUND`` variable.  The package is
++considered found if all variables listed contain valid results, e.g.
++valid filepaths.
++
++.. command:: find_package_handle_standard_args
++
++  There are two signatures::
++
++    find_package_handle_standard_args(<PackageName>
++      (DEFAULT_MSG|<custom-failure-message>)
++      <required-var>...
++      )
++
++    find_package_handle_standard_args(<PackageName>
++      [FOUND_VAR <result-var>]
++      [REQUIRED_VARS <required-var>...]
++      [VERSION_VAR <version-var>]
++      [HANDLE_COMPONENTS]
++      [CONFIG_MODE]
++      [FAIL_MESSAGE <custom-failure-message>]
++      )
++
++  The ``<PackageName>_FOUND`` variable will be set to ``TRUE`` if all
++  the variables ``<required-var>...`` are valid and any optional
++  constraints are satisfied, and ``FALSE`` otherwise.  A success or
++  failure message may be displayed based on the results and on
++  whether the ``REQUIRED`` and/or ``QUIET`` option was given to
++  the :command:`find_package` call.
++
++  The options are:
++
++  ``(DEFAULT_MSG|<custom-failure-message>)``
++    In the simple signature this specifies the failure message.
++    Use ``DEFAULT_MSG`` to ask for a default message to be computed
++    (recommended).  Not valid in the full signature.
++
++  ``FOUND_VAR <result-var>``
++    Obsolete.  Specifies either ``<PackageName>_FOUND`` or
++    ``<PACKAGENAME>_FOUND`` as the result variable.  This exists only
++    for compatibility with older versions of CMake and is now ignored.
++    Result variables of both names are always set for compatibility.
++
++  ``REQUIRED_VARS <required-var>...``
++    Specify the variables which are required for this package.
++    These may be named in the generated failure message asking the
++    user to set the missing variable values.  Therefore these should
++    typically be cache entries such as ``FOO_LIBRARY`` and not output
++    variables like ``FOO_LIBRARIES``.
++
++  ``VERSION_VAR <version-var>``
++    Specify the name of a variable that holds the version of the package
++    that has been found.  This version will be checked against the
++    (potentially) specified required version given to the
++    :command:`find_package` call, including its ``EXACT`` option.
++    The default messages include information about the required
++    version and the version which has been actually found, both
++    if the version is ok or not.
++
++  ``HANDLE_COMPONENTS``
++    Enable handling of package components.  In this case, the command
++    will report which components have been found and which are missing,
++    and the ``<PackageName>_FOUND`` variable will be set to ``FALSE``
++    if any of the required components (i.e. not the ones listed after
++    the ``OPTIONAL_COMPONENTS`` option of :command:`find_package`) are
++    missing.
++
++  ``CONFIG_MODE``
++    Specify that the calling find module is a wrapper around a
++    call to ``find_package(<PackageName> NO_MODULE)``.  This implies
++    a ``VERSION_VAR`` value of ``<PackageName>_VERSION``.  The command
++    will automatically check whether the package configuration file
++    was found.
++
++  ``FAIL_MESSAGE <custom-failure-message>``
++    Specify a custom failure message instead of using the default
++    generated message.  Not recommended.
++
++Example for the simple signature:
++
++.. code-block:: cmake
++
++  find_package_handle_standard_args(LibXml2 DEFAULT_MSG
++    LIBXML2_LIBRARY LIBXML2_INCLUDE_DIR)
++
++The ``LibXml2`` package is considered to be found if both
++``LIBXML2_LIBRARY`` and ``LIBXML2_INCLUDE_DIR`` are valid.
++Then also ``LibXml2_FOUND`` is set to ``TRUE``.  If it is not found
++and ``REQUIRED`` was used, it fails with a
++:command:`message(FATAL_ERROR)`, independent whether ``QUIET`` was
++used or not.  If it is found, success will be reported, including
++the content of the first ``<required-var>``.  On repeated CMake runs,
++the same message will not be printed again.
++
++Example for the full signature:
++
++.. code-block:: cmake
++
++  find_package_handle_standard_args(LibArchive
++    REQUIRED_VARS LibArchive_LIBRARY LibArchive_INCLUDE_DIR
++    VERSION_VAR LibArchive_VERSION)
++
++In this case, the ``LibArchive`` package is considered to be found if
++both ``LibArchive_LIBRARY`` and ``LibArchive_INCLUDE_DIR`` are valid.
++Also the version of ``LibArchive`` will be checked by using the version
++contained in ``LibArchive_VERSION``.  Since no ``FAIL_MESSAGE`` is given,
++the default messages will be printed.
++
++Another example for the full signature:
++
++.. code-block:: cmake
++
++  find_package(Automoc4 QUIET NO_MODULE HINTS /opt/automoc4)
++  find_package_handle_standard_args(Automoc4  CONFIG_MODE)
++
++In this case, a ``FindAutmoc4.cmake`` module wraps a call to
++``find_package(Automoc4 NO_MODULE)`` and adds an additional search
++directory for ``automoc4``.  Then the call to
++``find_package_handle_standard_args`` produces a proper success/failure
++message.
++#]=======================================================================]
++
++include(${CMAKE_CURRENT_LIST_DIR}/FindPackageMessage.cmake)
++
++# internal helper macro
++macro(_FPHSA_FAILURE_MESSAGE _msg)
++  if (${_NAME}_FIND_REQUIRED)
++    message(FATAL_ERROR "${_msg}")
++  else ()
++    if (NOT ${_NAME}_FIND_QUIETLY)
++      message(STATUS "${_msg}")
++    endif ()
++  endif ()
++endmacro()
++
++
++# internal helper macro to generate the failure message when used in CONFIG_MODE:
++macro(_FPHSA_HANDLE_FAILURE_CONFIG_MODE)
++  # <name>_CONFIG is set, but FOUND is false, this means that some other of the REQUIRED_VARS was not found:
++  if(${_NAME}_CONFIG)
++    _FPHSA_FAILURE_MESSAGE("${FPHSA_FAIL_MESSAGE}: missing:${MISSING_VARS} (found ${${_NAME}_CONFIG} ${VERSION_MSG})")
++  else()
++    # If _CONSIDERED_CONFIGS is set, the config-file has been found, but no suitable version.
++    # List them all in the error message:
++    if(${_NAME}_CONSIDERED_CONFIGS)
++      set(configsText "")
++      list(LENGTH ${_NAME}_CONSIDERED_CONFIGS configsCount)
++      math(EXPR configsCount "${configsCount} - 1")
++      foreach(currentConfigIndex RANGE ${configsCount})
++        list(GET ${_NAME}_CONSIDERED_CONFIGS ${currentConfigIndex} filename)
++        list(GET ${_NAME}_CONSIDERED_VERSIONS ${currentConfigIndex} version)
++        string(APPEND configsText "    ${filename} (version ${version})\n")
++      endforeach()
++      if (${_NAME}_NOT_FOUND_MESSAGE)
++        string(APPEND configsText "    Reason given by package: ${${_NAME}_NOT_FOUND_MESSAGE}\n")
++      endif()
++      _FPHSA_FAILURE_MESSAGE("${FPHSA_FAIL_MESSAGE} ${VERSION_MSG}, checked the following files:\n${configsText}")
++
++    else()
++      # Simple case: No Config-file was found at all:
++      _FPHSA_FAILURE_MESSAGE("${FPHSA_FAIL_MESSAGE}: found neither ${_NAME}Config.cmake nor ${_NAME_LOWER}-config.cmake ${VERSION_MSG}")
++    endif()
++  endif()
++endmacro()
++
++
++function(FIND_PACKAGE_HANDLE_STANDARD_ARGS _NAME _FIRST_ARG)
++
++# Set up the arguments for `cmake_parse_arguments`.
++  set(options  CONFIG_MODE  HANDLE_COMPONENTS)
++  set(oneValueArgs  FAIL_MESSAGE  VERSION_VAR  FOUND_VAR)
++  set(multiValueArgs REQUIRED_VARS)
++
++# Check whether we are in 'simple' or 'extended' mode:
++  set(_KEYWORDS_FOR_EXTENDED_MODE  ${options} ${oneValueArgs} ${multiValueArgs} )
++  list(FIND _KEYWORDS_FOR_EXTENDED_MODE "${_FIRST_ARG}" INDEX)
++
++  if(${INDEX} EQUAL -1)
++    set(FPHSA_FAIL_MESSAGE ${_FIRST_ARG})
++    set(FPHSA_REQUIRED_VARS ${ARGN})
++    set(FPHSA_VERSION_VAR)
++  else()
++    cmake_parse_arguments(FPHSA "${options}" "${oneValueArgs}" "${multiValueArgs}"  ${_FIRST_ARG} ${ARGN})
++
++    if(FPHSA_UNPARSED_ARGUMENTS)
++      message(FATAL_ERROR "Unknown keywords given to FIND_PACKAGE_HANDLE_STANDARD_ARGS(): \"${FPHSA_UNPARSED_ARGUMENTS}\"")
++    endif()
++
++    if(NOT FPHSA_FAIL_MESSAGE)
++      set(FPHSA_FAIL_MESSAGE  "DEFAULT_MSG")
++    endif()
++
++    # In config-mode, we rely on the variable <package>_CONFIG, which is set by find_package()
++    # when it successfully found the config-file, including version checking:
++    if(FPHSA_CONFIG_MODE)
++      list(INSERT FPHSA_REQUIRED_VARS 0 ${_NAME}_CONFIG)
++      list(REMOVE_DUPLICATES FPHSA_REQUIRED_VARS)
++      set(FPHSA_VERSION_VAR ${_NAME}_VERSION)
++    endif()
++
++    if(NOT FPHSA_REQUIRED_VARS)
++      message(FATAL_ERROR "No REQUIRED_VARS specified for FIND_PACKAGE_HANDLE_STANDARD_ARGS()")
++    endif()
++  endif()
++
++# now that we collected all arguments, process them
++
++  if("x${FPHSA_FAIL_MESSAGE}" STREQUAL "xDEFAULT_MSG")
++    set(FPHSA_FAIL_MESSAGE "Could NOT find ${_NAME}")
++  endif()
++
++  list(GET FPHSA_REQUIRED_VARS 0 _FIRST_REQUIRED_VAR)
++
++  string(TOUPPER ${_NAME} _NAME_UPPER)
++  string(TOLOWER ${_NAME} _NAME_LOWER)
++
++  if(FPHSA_FOUND_VAR)
++    if(FPHSA_FOUND_VAR MATCHES "^${_NAME}_FOUND$"  OR  FPHSA_FOUND_VAR MATCHES "^${_NAME_UPPER}_FOUND$")
++      set(_FOUND_VAR ${FPHSA_FOUND_VAR})
++    else()
++      message(FATAL_ERROR "The argument for FOUND_VAR is \"${FPHSA_FOUND_VAR}\", but only \"${_NAME}_FOUND\" and \"${_NAME_UPPER}_FOUND\" are valid names.")
++    endif()
++  else()
++    set(_FOUND_VAR ${_NAME_UPPER}_FOUND)
++  endif()
++
++  # collect all variables which were not found, so they can be printed, so the
++  # user knows better what went wrong (#6375)
++  set(MISSING_VARS "")
++  set(DETAILS "")
++  # check if all passed variables are valid
++  set(FPHSA_FOUND_${_NAME} TRUE)
++  foreach(_CURRENT_VAR ${FPHSA_REQUIRED_VARS})
++    if(NOT ${_CURRENT_VAR})
++      set(FPHSA_FOUND_${_NAME} FALSE)
++      string(APPEND MISSING_VARS " ${_CURRENT_VAR}")
++    else()
++      string(APPEND DETAILS "[${${_CURRENT_VAR}}]")
++    endif()
++  endforeach()
++  if(FPHSA_FOUND_${_NAME})
++    set(${_NAME}_FOUND TRUE)
++    set(${_NAME_UPPER}_FOUND TRUE)
++  else()
++    set(${_NAME}_FOUND FALSE)
++    set(${_NAME_UPPER}_FOUND FALSE)
++  endif()
++
++  # component handling
++  unset(FOUND_COMPONENTS_MSG)
++  unset(MISSING_COMPONENTS_MSG)
++
++  if(FPHSA_HANDLE_COMPONENTS)
++    foreach(comp ${${_NAME}_FIND_COMPONENTS})
++      if(${_NAME}_${comp}_FOUND)
++
++        if(NOT DEFINED FOUND_COMPONENTS_MSG)
++          set(FOUND_COMPONENTS_MSG "found components: ")
++        endif()
++        string(APPEND FOUND_COMPONENTS_MSG " ${comp}")
++
++      else()
++
++        if(NOT DEFINED MISSING_COMPONENTS_MSG)
++          set(MISSING_COMPONENTS_MSG "missing components: ")
++        endif()
++        string(APPEND MISSING_COMPONENTS_MSG " ${comp}")
++
++        if(${_NAME}_FIND_REQUIRED_${comp})
++          set(${_NAME}_FOUND FALSE)
++          string(APPEND MISSING_VARS " ${comp}")
++        endif()
++
++      endif()
++    endforeach()
++    set(COMPONENT_MSG "${FOUND_COMPONENTS_MSG} ${MISSING_COMPONENTS_MSG}")
++    string(APPEND DETAILS "[c${COMPONENT_MSG}]")
++  endif()
++
++  # version handling:
++  set(VERSION_MSG "")
++  set(VERSION_OK TRUE)
++
++  # check with DEFINED here as the requested or found version may be "0"
++  if (DEFINED ${_NAME}_FIND_VERSION)
++    if(DEFINED ${FPHSA_VERSION_VAR})
++      set(_FOUND_VERSION ${${FPHSA_VERSION_VAR}})
++
++      if(${_NAME}_FIND_VERSION_EXACT)       # exact version required
++        # count the dots in the version string
++        string(REGEX REPLACE "[^.]" "" _VERSION_DOTS "${_FOUND_VERSION}")
++        # add one dot because there is one dot more than there are components
++        string(LENGTH "${_VERSION_DOTS}." _VERSION_DOTS)
++        if (_VERSION_DOTS GREATER ${_NAME}_FIND_VERSION_COUNT)
++          # Because of the C++ implementation of find_package() ${_NAME}_FIND_VERSION_COUNT
++          # is at most 4 here. Therefore a simple lookup table is used.
++          if (${_NAME}_FIND_VERSION_COUNT EQUAL 1)
++            set(_VERSION_REGEX "[^.]*")
++          elseif (${_NAME}_FIND_VERSION_COUNT EQUAL 2)
++            set(_VERSION_REGEX "[^.]*\\.[^.]*")
++          elseif (${_NAME}_FIND_VERSION_COUNT EQUAL 3)
++            set(_VERSION_REGEX "[^.]*\\.[^.]*\\.[^.]*")
++          else ()
++            set(_VERSION_REGEX "[^.]*\\.[^.]*\\.[^.]*\\.[^.]*")
++          endif ()
++          string(REGEX REPLACE "^(${_VERSION_REGEX})\\..*" "\\1" _VERSION_HEAD "${_FOUND_VERSION}")
++          unset(_VERSION_REGEX)
++          if (NOT ${_NAME}_FIND_VERSION VERSION_EQUAL _VERSION_HEAD)
++            set(VERSION_MSG "Found unsuitable version \"${_FOUND_VERSION}\", but required is exact version \"${${_NAME}_FIND_VERSION}\"")
++            set(VERSION_OK FALSE)
++          else ()
++            set(VERSION_MSG "(found suitable exact version \"${_FOUND_VERSION}\")")
++          endif ()
++          unset(_VERSION_HEAD)
++        else ()
++          if (NOT ${_NAME}_FIND_VERSION VERSION_EQUAL _FOUND_VERSION)
++            set(VERSION_MSG "Found unsuitable version \"${_FOUND_VERSION}\", but required is exact version \"${${_NAME}_FIND_VERSION}\"")
++            set(VERSION_OK FALSE)
++          else ()
++            set(VERSION_MSG "(found suitable exact version \"${_FOUND_VERSION}\")")
++          endif ()
++        endif ()
++        unset(_VERSION_DOTS)
++
++      else()     # minimum version specified:
++        if (${_NAME}_FIND_VERSION VERSION_GREATER _FOUND_VERSION)
++          set(VERSION_MSG "Found unsuitable version \"${_FOUND_VERSION}\", but required is at least \"${${_NAME}_FIND_VERSION}\"")
++          set(VERSION_OK FALSE)
++        else ()
++          set(VERSION_MSG "(found suitable version \"${_FOUND_VERSION}\", minimum required is \"${${_NAME}_FIND_VERSION}\")")
++        endif ()
++      endif()
++
++    else()
++
++      # if the package was not found, but a version was given, add that to the output:
++      if(${_NAME}_FIND_VERSION_EXACT)
++         set(VERSION_MSG "(Required is exact version \"${${_NAME}_FIND_VERSION}\")")
++      else()
++         set(VERSION_MSG "(Required is at least version \"${${_NAME}_FIND_VERSION}\")")
++      endif()
++
++    endif()
++  else ()
++    # Check with DEFINED as the found version may be 0.
++    if(DEFINED ${FPHSA_VERSION_VAR})
++      set(VERSION_MSG "(found version \"${${FPHSA_VERSION_VAR}}\")")
++    endif()
++  endif ()
++
++  if(VERSION_OK)
++    string(APPEND DETAILS "[v${${FPHSA_VERSION_VAR}}(${${_NAME}_FIND_VERSION})]")
++  else()
++    set(${_NAME}_FOUND FALSE)
++  endif()
++
++
++  # print the result:
++  if (${_NAME}_FOUND)
++    FIND_PACKAGE_MESSAGE(${_NAME} "Found ${_NAME}: ${${_FIRST_REQUIRED_VAR}} ${VERSION_MSG} ${COMPONENT_MSG}" "${DETAILS}")
++  else ()
++
++    if(FPHSA_CONFIG_MODE)
++      _FPHSA_HANDLE_FAILURE_CONFIG_MODE()
++    else()
++      if(NOT VERSION_OK)
++        _FPHSA_FAILURE_MESSAGE("${FPHSA_FAIL_MESSAGE}: ${VERSION_MSG} (found ${${_FIRST_REQUIRED_VAR}})")
++      else()
++        _FPHSA_FAILURE_MESSAGE("${FPHSA_FAIL_MESSAGE} (missing:${MISSING_VARS}) ${VERSION_MSG}")
++      endif()
++    endif()
++
++  endif ()
++
++  set(${_NAME}_FOUND ${${_NAME}_FOUND} PARENT_SCOPE)
++  set(${_NAME_UPPER}_FOUND ${${_NAME}_FOUND} PARENT_SCOPE)
++endfunction()
+diff --git a/CMake/Packages/FindPackageMessage.cmake b/CMake/Packages/FindPackageMessage.cmake
+new file mode 100644
+index 000000000..6821cee4f
+--- /dev/null
++++ b/CMake/Packages/FindPackageMessage.cmake
+@@ -0,0 +1,47 @@
++# Distributed under the OSI-approved BSD 3-Clause License.  See accompanying
++# file Copyright.txt or https://cmake.org/licensing for details.
++
++#.rst:
++# FindPackageMessage
++# ------------------
++#
++#
++#
++# FIND_PACKAGE_MESSAGE(<name> "message for user" "find result details")
++#
++# This macro is intended to be used in FindXXX.cmake modules files.  It
++# will print a message once for each unique find result.  This is useful
++# for telling the user where a package was found.  The first argument
++# specifies the name (XXX) of the package.  The second argument
++# specifies the message to display.  The third argument lists details
++# about the find result so that if they change the message will be
++# displayed again.  The macro also obeys the QUIET argument to the
++# find_package command.
++#
++# Example:
++#
++# ::
++#
++#   if(X11_FOUND)
++#     FIND_PACKAGE_MESSAGE(X11 "Found X11: ${X11_X11_LIB}"
++#       "[${X11_X11_LIB}][${X11_INCLUDE_DIR}]")
++#   else()
++#    ...
++#   endif()
++
++function(FIND_PACKAGE_MESSAGE pkg msg details)
++  # Avoid printing a message repeatedly for the same find result.
++  if(NOT ${pkg}_FIND_QUIETLY)
++    string(REPLACE "\n" "" details "${details}")
++    set(DETAILS_VAR FIND_PACKAGE_MESSAGE_DETAILS_${pkg})
++    if(NOT "${details}" STREQUAL "${${DETAILS_VAR}}")
++      # The message has not yet been printed.
++      message(STATUS "${msg}")
++
++      # Save the find details in the cache to avoid printing the same
++      # message again.
++      set("${DETAILS_VAR}" "${details}"
++        CACHE INTERNAL "Details about finding ${pkg}")
++    endif()
++  endif()
++endfunction()
+diff --git a/CMake/Packages/SelectLibraryConfigurations.cmake b/CMake/Packages/SelectLibraryConfigurations.cmake
+new file mode 100644
+index 000000000..dce6f9926
+--- /dev/null
++++ b/CMake/Packages/SelectLibraryConfigurations.cmake
+@@ -0,0 +1,70 @@
++# Distributed under the OSI-approved BSD 3-Clause License.  See accompanying
++# file Copyright.txt or https://cmake.org/licensing for details.
++
++#.rst:
++# SelectLibraryConfigurations
++# ---------------------------
++#
++#
++#
++# select_library_configurations( basename )
++#
++# This macro takes a library base name as an argument, and will choose
++# good values for basename_LIBRARY, basename_LIBRARIES,
++# basename_LIBRARY_DEBUG, and basename_LIBRARY_RELEASE depending on what
++# has been found and set.  If only basename_LIBRARY_RELEASE is defined,
++# basename_LIBRARY will be set to the release value, and
++# basename_LIBRARY_DEBUG will be set to basename_LIBRARY_DEBUG-NOTFOUND.
++# If only basename_LIBRARY_DEBUG is defined, then basename_LIBRARY will
++# take the debug value, and basename_LIBRARY_RELEASE will be set to
++# basename_LIBRARY_RELEASE-NOTFOUND.
++#
++# If the generator supports configuration types, then basename_LIBRARY
++# and basename_LIBRARIES will be set with debug and optimized flags
++# specifying the library to be used for the given configuration.  If no
++# build type has been set or the generator in use does not support
++# configuration types, then basename_LIBRARY and basename_LIBRARIES will
++# take only the release value, or the debug value if the release one is
++# not set.
++
++# This macro was adapted from the FindQt4 CMake module and is maintained by Will
++# Dicharry <wdicharry@stellarscience.com>.
++
++macro( select_library_configurations basename )
++    if(NOT ${basename}_LIBRARY_RELEASE)
++        set(${basename}_LIBRARY_RELEASE "${basename}_LIBRARY_RELEASE-NOTFOUND" CACHE FILEPATH "Path to a library.")
++    endif()
++    if(NOT ${basename}_LIBRARY_DEBUG)
++        set(${basename}_LIBRARY_DEBUG "${basename}_LIBRARY_DEBUG-NOTFOUND" CACHE FILEPATH "Path to a library.")
++    endif()
++
++    if( ${basename}_LIBRARY_DEBUG AND ${basename}_LIBRARY_RELEASE AND
++           NOT ${basename}_LIBRARY_DEBUG STREQUAL ${basename}_LIBRARY_RELEASE AND
++           ( CMAKE_CONFIGURATION_TYPES OR CMAKE_BUILD_TYPE ) )
++        # if the generator supports configuration types or CMAKE_BUILD_TYPE
++        # is set, then set optimized and debug options.
++        set( ${basename}_LIBRARY "" )
++        foreach( _libname IN LISTS ${basename}_LIBRARY_RELEASE )
++            list( APPEND ${basename}_LIBRARY optimized "${_libname}" )
++        endforeach()
++        foreach( _libname IN LISTS ${basename}_LIBRARY_DEBUG )
++            list( APPEND ${basename}_LIBRARY debug "${_libname}" )
++        endforeach()
++    elseif( ${basename}_LIBRARY_RELEASE )
++        set( ${basename}_LIBRARY ${${basename}_LIBRARY_RELEASE} )
++    elseif( ${basename}_LIBRARY_DEBUG )
++        set( ${basename}_LIBRARY ${${basename}_LIBRARY_DEBUG} )
++    else()
++        set( ${basename}_LIBRARY "${basename}_LIBRARY-NOTFOUND")
++    endif()
++
++    set( ${basename}_LIBRARIES "${${basename}_LIBRARY}" )
++
++    if( ${basename}_LIBRARY )
++        set( ${basename}_FOUND TRUE )
++    endif()
++
++    mark_as_advanced( ${basename}_LIBRARY_RELEASE
++        ${basename}_LIBRARY_DEBUG
++    )
++endmacro()
+diff --git a/CMake/Utils/AndroidMacros.cmake b/CMake/Utils/AndroidMacros.cmake
+index b3c9b8d34..78be6559f 100644
+--- a/CMake/Utils/AndroidMacros.cmake
++++ b/CMake/Utils/AndroidMacros.cmake
+@@ -85,21 +85,21 @@ macro(create_android_proj ANDROID_PROJECT_TARGET)
+     configure_file("${OGRE_TEMPLATES_DIR}/AndroidManifest.xml.in" "${NDKOUT}/AndroidManifest.xml" @ONLY)
+     file(WRITE "${NDKOUT}/default.properties" "target=${ANDROID_TARGET}")
+     
+-    if(EXISTS ${ANDROID_EXECUTABLE})
+-        add_custom_command(
+-            TARGET ${ANDROID_PROJECT_TARGET}
+-            POST_BUILD
+-            COMMAND ${ANDROID_EXECUTABLE} update project  --target 1 --path "${NDKOUT}"
+-            WORKING_DIRECTORY ${NDKOUT}
+-        )
++    # if(EXISTS ${ANDROID_EXECUTABLE})
++    #     add_custom_command(
++    #         TARGET ${ANDROID_PROJECT_TARGET}
++    #         POST_BUILD
++    #         COMMAND ${ANDROID_EXECUTABLE} update project  --target 1 --path "${NDKOUT}"
++    #         WORKING_DIRECTORY ${NDKOUT}
++    #     )
+ 
+-        add_custom_command(
+-            TARGET ${ANDROID_PROJECT_TARGET}
+-            POST_BUILD
+-            COMMAND ${ANT_EXECUTABLE} debug
+-            WORKING_DIRECTORY ${NDKOUT}
+-        )
+-    else()
+-        message(WARNING "Android executable not found. Not building ${ANDROID_PROJECT_TARGET} APK. Do you have the Android SDK installed?")
+-    endif()
++    #     add_custom_command(
++    #         TARGET ${ANDROID_PROJECT_TARGET}
++    #         POST_BUILD
++    #         COMMAND ${ANT_EXECUTABLE} debug
++    #         WORKING_DIRECTORY ${NDKOUT}
++    #     )
++    # else()
++    #     message(WARNING "Android executable not found. Not building ${ANDROID_PROJECT_TARGET} APK. Do you have the Android SDK installed?")
++    # endif()
+ endmacro(create_android_proj)
+diff --git a/Samples/Browser/CMakeLists.txt b/Samples/Browser/CMakeLists.txt
+index 5d68b6aac..75c43ecf4 100644
+--- a/Samples/Browser/CMakeLists.txt
++++ b/Samples/Browser/CMakeLists.txt
+@@ -157,7 +157,7 @@ target_link_libraries(SampleBrowser OgreMain ${OGRE_PLUGIN_LIBRARIES} ${SAMPLE_L
+ 
+ if(ANDROID)
+     target_link_libraries(SampleBrowser native_app_glue cpufeatures android c m dl z log EGL GLESv2 "-u ANativeActivity_onCreate")
+-    set_target_properties(SampleBrowser PROPERTIES LINK_FLAGS -s) # strip symbols
++    # set_target_properties(SampleBrowser PROPERTIES LINK_FLAGS -s) # strip symbols
+ endif()
+ 
+ # Add samples as dependencies
