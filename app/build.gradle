@@ -1,6 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
+    signingConfigs {
+        config {
+        }
+    }
     compileSdkVersion 28
     defaultConfig {
         applicationId "org.ogre.browser"
@@ -10,8 +14,8 @@ android {
         versionName "1.11.3"
         externalNativeBuild {
             cmake {
-                arguments "-DANDROID_STL=c++_shared", "-DANDROID_ARM_NEON=ON", "-DOGRE_BUILD_COMPONENT_JAVA=FALSE",
-                        "-DOGRE_BUILD_ANDROID_JNI_SAMPLE=FALSE", "-DOGRE_BUILD_SAMPLES=TRUE"
+                arguments "-DANDROID_STL=c++_shared", "-DANDROID_ARM_NEON=ON", "-DOGRE_BUILD_COMPONENT_JAVA=OFF",
+                        "-DOGRE_BUILD_ANDROID_JNI_SAMPLE=OFF", "-DOGRE_BUILD_SAMPLES=OFF"
             }
         }
         ndk {
@@ -27,12 +31,12 @@ android {
     externalNativeBuild {
         cmake {
             version "3.10.2"
-            path "../../ogre/CMakeLists.txt"
+            path "CMakeLists.txt"
         }
     }
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation 'com.android.support:appcompat-v7:28.0.0'
 }

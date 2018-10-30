@@ -10,35 +10,19 @@ cmake_minimum_required(VERSION 3.4.1)
 # You can define multiple libraries, and CMake builds them for you.
 # Gradle automatically packages shared libraries with your APK.
 
-add_library( # Sets the name of the library.
-        native-lib
+add_subdirectory(ogre)
 
-        # Sets the library as a shared library.
-        SHARED
+# Include necessary submodules
+set(CMAKE_MODULE_PATH
+"${CMAKE_SOURCE_DIR}/ogre/CMake"
+"${CMAKE_SOURCE_DIR}/ogre/CMake/Utils"
+"${CMAKE_SOURCE_DIR}/ogre/CMake/Packages"
+)
 
-        # Provides a relative path to your source file(s).
-        src/main/cpp/native-lib.cpp)
+include(CMakeDependentOption)
+include(MacroLogFeature)
+include(OgreConfigTargets)
+include(PreprocessorUtils)
+set(OGRE_TEMPLATES_DIR "${OGRE_SOURCE_DIR}/CMake/Templates")
 
-# Searches for a specified prebuilt library and stores the path as a
-# variable. Because CMake includes system libraries in the search path by
-# default, you only need to specify the name of the public NDK library
-# you want to add. CMake verifies that the library exists before
-# completing its build.
-
-find_library( # Sets the name of the path variable.
-        log-lib
-
-        # Specifies the name of the NDK library that
-        # you want CMake to locate.
-        log)
-
-# Specifies libraries CMake should link to your target library. You
-# can link multiple libraries, such as libraries you define in this
-# build script, prebuilt third-party libraries, or system libraries.
-
-target_link_libraries( # Specifies the target library.
-        native-lib
-
-        # Links the target library to the log library
-        # included in the NDK.
-        ${log-lib})
+add_subdirectory(src/main/cpp demo)

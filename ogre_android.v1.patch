@@ -1,0 +1,559 @@
+diff --git a/CMake/ConfigureBuild.cmake b/CMake/ConfigureBuild.cmake
+index 9d982347e..74336da20 100644
+--- a/CMake/ConfigureBuild.cmake
++++ b/CMake/ConfigureBuild.cmake
+@@ -134,9 +134,9 @@ if(SDL2_FOUND OR EMSCRIPTEN)
+ endif()
+ 
+ # generate OgreBuildSettings.h
+-configure_file(${OGRE_TEMPLATES_DIR}/OgreBuildSettings.h.in ${CMAKE_BINARY_DIR}/include/OgreBuildSettings.h @ONLY)
+-configure_file(${OGRE_TEMPLATES_DIR}/OgreRTShaderConfig.h.in ${CMAKE_BINARY_DIR}/include/OgreRTShaderConfig.h @ONLY)
+-configure_file(${OGRE_TEMPLATES_DIR}/OgreGLES2Config.h.in ${CMAKE_BINARY_DIR}/include/OgreGLES2Config.h @ONLY)
++configure_file(${OGRE_TEMPLATES_DIR}/OgreBuildSettings.h.in ${OGRE_BINARY_DIR}/include/OgreBuildSettings.h @ONLY)
++configure_file(${OGRE_TEMPLATES_DIR}/OgreRTShaderConfig.h.in ${OGRE_BINARY_DIR}/include/OgreRTShaderConfig.h @ONLY)
++configure_file(${OGRE_TEMPLATES_DIR}/OgreGLES2Config.h.in ${OGRE_BINARY_DIR}/include/OgreGLES2Config.h @ONLY)
+ 
+ set(OGRE_LIB_SUFFIX "")
+ 
+diff --git a/CMake/Dependencies.cmake b/CMake/Dependencies.cmake
+index e88e1c4c3..46eccd4bb 100644
+--- a/CMake/Dependencies.cmake
++++ b/CMake/Dependencies.cmake
+@@ -117,10 +117,10 @@ if(OGRE_BUILD_DEPENDENCIES AND NOT EXISTS ${OGREDEPS_PATH})
+             -G ${CMAKE_GENERATOR}
+             -DCMAKE_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM}
+             ${CROSS}
+-            ${CMAKE_BINARY_DIR}/zlib-1.2.11
+-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/zlib-1.2.11)
++            ${OGRE_BINARY_DIR}/zlib-1.2.11
++            WORKING_DIRECTORY ${OGRE_BINARY_DIR}/zlib-1.2.11)
+         execute_process(COMMAND ${CMAKE_COMMAND} 
+-            --build ${CMAKE_BINARY_DIR}/zlib-1.2.11 ${BUILD_COMMAND_OPTS})
++            --build ${OGRE_BINARY_DIR}/zlib-1.2.11 ${BUILD_COMMAND_OPTS})
+     endif()
+ 
+     message(STATUS "Building ZZIPlib")
+@@ -137,10 +137,10 @@ if(OGRE_BUILD_DEPENDENCIES AND NOT EXISTS ${OGREDEPS_PATH})
+         -G ${CMAKE_GENERATOR}
+         -DCMAKE_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM}
+         ${CROSS}
+-        ${CMAKE_BINARY_DIR}/ZZIPlib-master
+-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/ZZIPlib-master)
++        ${OGRE_BINARY_DIR}/ZZIPlib-master
++        WORKING_DIRECTORY ${OGRE_BINARY_DIR}/ZZIPlib-master)
+     execute_process(COMMAND ${CMAKE_COMMAND} 
+-        --build ${CMAKE_BINARY_DIR}/ZZIPlib-master ${BUILD_COMMAND_OPTS})
++        --build ${OGRE_BINARY_DIR}/ZZIPlib-master ${BUILD_COMMAND_OPTS})
+     
+     message(STATUS "Building freetype")
+     file(DOWNLOAD
+@@ -150,7 +150,7 @@ if(OGRE_BUILD_DEPENDENCIES AND NOT EXISTS ${OGREDEPS_PATH})
+         -E tar xf freetype-2.9.tar.gz WORKING_DIRECTORY ${OGRE_BINARY_DIR})
+     # patch toolchain for iOS
+     execute_process(COMMAND ${CMAKE_COMMAND} -E copy
+-        ${CMAKE_SOURCE_DIR}/CMake/toolchain/ios.toolchain.xcode.cmake
++        ${OGRE_SOURCE_DIR}/CMake/toolchain/ios.toolchain.xcode.cmake
+         freetype-2.9/builds/cmake/iOS.cmake
+ 		WORKING_DIRECTORY ${OGRE_BINARY_DIR})
+     execute_process(COMMAND ${CMAKE_COMMAND}
+@@ -160,14 +160,14 @@ if(OGRE_BUILD_DEPENDENCIES AND NOT EXISTS ${OGREDEPS_PATH})
+         -DWITH_PNG=OFF
+         -DWITH_BZip2=OFF # tries to use it on iOS otherwise
+         # workaround for broken iOS toolchain in freetype
+-        -DPROJECT_SOURCE_DIR=${CMAKE_BINARY_DIR}/freetype-2.9
++        -DPROJECT_SOURCE_DIR=${OGRE_BINARY_DIR}/freetype-2.9
+         ${CROSS}
+         -G ${CMAKE_GENERATOR}
+         -DCMAKE_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM}
+-        ${CMAKE_BINARY_DIR}/freetype-2.9
+-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/freetype-2.9/objs)
++        ${OGRE_BINARY_DIR}/freetype-2.9
++        WORKING_DIRECTORY ${OGRE_BINARY_DIR}/freetype-2.9/objs)
+     execute_process(COMMAND ${CMAKE_COMMAND}
+-        --build ${CMAKE_BINARY_DIR}/freetype-2.9/objs ${BUILD_COMMAND_OPTS})
++        --build ${OGRE_BINARY_DIR}/freetype-2.9/objs ${BUILD_COMMAND_OPTS})
+ 
+     if(MSVC OR MINGW) # other platforms dont need this
+         message(STATUS "Building SDL2")
+diff --git a/CMake/Utils/AndroidMacros.cmake b/CMake/Utils/AndroidMacros.cmake
+index b3c9b8d34..ff236bcf2 100644
+--- a/CMake/Utils/AndroidMacros.cmake
++++ b/CMake/Utils/AndroidMacros.cmake
+@@ -27,21 +27,21 @@ macro(copy_assets_to_android_proj)
+     configure_file("${OGRE_TEMPLATES_DIR}/Android_resources.cfg.in" "${NDKOUT}/assets/resources.cfg" @ONLY)
+     configure_file("${OGRE_TEMPLATES_DIR}/samples.cfg.in" "${NDKOUT}/assets/samples.cfg" @ONLY)
+     
+-    file(COPY "${CMAKE_SOURCE_DIR}/Samples/Media/RTShaderLib" DESTINATION "${NDKOUT}/assets")
++    file(COPY "${OGRE_SOURCE_DIR}/Samples/Media/RTShaderLib" DESTINATION "${NDKOUT}/assets")
+     
+-    file(COPY "${CMAKE_SOURCE_DIR}/Samples/Media/models" DESTINATION "${NDKOUT}/assets")
+-    file(COPY "${CMAKE_SOURCE_DIR}/Samples/Media/particle" DESTINATION "${NDKOUT}/assets")
+-    file(COPY "${CMAKE_SOURCE_DIR}/Samples/Media/thumbnails" DESTINATION "${NDKOUT}/assets")
+-    file(COPY "${CMAKE_SOURCE_DIR}/Samples/Media/packs" DESTINATION "${NDKOUT}/assets")
+-    file(COPY "${CMAKE_SOURCE_DIR}/Samples/Media/materials" DESTINATION "${NDKOUT}/assets")
+-    file(COPY "${CMAKE_SOURCE_DIR}/Samples/Media/HLMS" DESTINATION "${NDKOUT}/assets")
+-    file(COPY "${CMAKE_SOURCE_DIR}/Samples/Media/PBR" DESTINATION "${NDKOUT}/assets")
+-    file(COPY "${CMAKE_SOURCE_DIR}/Samples/Media/DeferredShadingMedia" DESTINATION "${NDKOUT}/assets")
++    file(COPY "${OGRE_SOURCE_DIR}/Samples/Media/models" DESTINATION "${NDKOUT}/assets")
++    file(COPY "${OGRE_SOURCE_DIR}/Samples/Media/particle" DESTINATION "${NDKOUT}/assets")
++    file(COPY "${OGRE_SOURCE_DIR}/Samples/Media/thumbnails" DESTINATION "${NDKOUT}/assets")
++    file(COPY "${OGRE_SOURCE_DIR}/Samples/Media/packs" DESTINATION "${NDKOUT}/assets")
++    file(COPY "${OGRE_SOURCE_DIR}/Samples/Media/materials" DESTINATION "${NDKOUT}/assets")
++    file(COPY "${OGRE_SOURCE_DIR}/Samples/Media/HLMS" DESTINATION "${NDKOUT}/assets")
++    file(COPY "${OGRE_SOURCE_DIR}/Samples/Media/PBR" DESTINATION "${NDKOUT}/assets")
++    file(COPY "${OGRE_SOURCE_DIR}/Samples/Media/DeferredShadingMedia" DESTINATION "${NDKOUT}/assets")
+ 
+-    file(COPY "${CMAKE_SOURCE_DIR}/SDK/Android/drawable-hdpi" DESTINATION "${NDKOUT}/res")
+-    file(COPY "${CMAKE_SOURCE_DIR}/SDK/Android/drawable-ldpi" DESTINATION "${NDKOUT}/res")
+-    file(COPY "${CMAKE_SOURCE_DIR}/SDK/Android/drawable-mdpi" DESTINATION "${NDKOUT}/res")
+-    file(COPY "${CMAKE_SOURCE_DIR}/SDK/Android/drawable-xhdpi" DESTINATION "${NDKOUT}/res")
++    file(COPY "${OGRE_SOURCE_DIR}/SDK/Android/drawable-hdpi" DESTINATION "${NDKOUT}/res")
++    file(COPY "${OGRE_SOURCE_DIR}/SDK/Android/drawable-ldpi" DESTINATION "${NDKOUT}/res")
++    file(COPY "${OGRE_SOURCE_DIR}/SDK/Android/drawable-mdpi" DESTINATION "${NDKOUT}/res")
++    file(COPY "${OGRE_SOURCE_DIR}/SDK/Android/drawable-xhdpi" DESTINATION "${NDKOUT}/res")
+ endmacro()
+ 
+ macro(create_android_proj ANDROID_PROJECT_TARGET)
+diff --git a/Components/Bites/CMakeLists.txt b/Components/Bites/CMakeLists.txt
+index 128bf18fb..708d6a57d 100644
+--- a/Components/Bites/CMakeLists.txt
++++ b/Components/Bites/CMakeLists.txt
+@@ -66,7 +66,7 @@ endif ()
+ 
+ # define header and source files for the library
+ file(GLOB HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h")
+-list(APPEND HEADER_FILES ${CMAKE_BINARY_DIR}/include/OgreBitesPrerequisites.h)
++list(APPEND HEADER_FILES ${OGRE_BINARY_DIR}/include/OgreBitesPrerequisites.h)
+ set(SOURCES 
+   "${CMAKE_CURRENT_SOURCE_DIR}/src/OgreAdvancedRenderControls.cpp"
+   "${CMAKE_CURRENT_SOURCE_DIR}/src/OgreApplicationContext.cpp"
+@@ -130,7 +130,7 @@ endif()
+ 
+ generate_export_header(OgreBites 
+     EXPORT_MACRO_NAME _OgreBitesExport
+-    EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/include/OgreBitesPrerequisites.h)
++    EXPORT_FILE_NAME ${OGRE_BINARY_DIR}/include/OgreBitesPrerequisites.h)
+ 
+ # install 
+ ogre_config_framework(OgreBites)
+diff --git a/Components/HLMS/CMakeLists.txt b/Components/HLMS/CMakeLists.txt
+index 2b00b228e..597a5b4ff 100644
+--- a/Components/HLMS/CMakeLists.txt
++++ b/Components/HLMS/CMakeLists.txt
+@@ -15,7 +15,7 @@ PROJECT(OgreHLMS)
+ 
+ # define header and source files for the library
+ file(GLOB HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h")
+-list(APPEND HEADER_FILES ${CMAKE_BINARY_DIR}/include/OgreHlmsPrerequisites.h)
++list(APPEND HEADER_FILES ${OGRE_BINARY_DIR}/include/OgreHlmsPrerequisites.h)
+ file(GLOB SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+ 
+ # Add needed definitions 
+@@ -31,7 +31,7 @@ target_include_directories(OgreHLMS PUBLIC
+ 
+ generate_export_header(OgreHLMS 
+     EXPORT_MACRO_NAME _OgreHlmsExport
+-    EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/include/OgreHlmsPrerequisites.h)
++    EXPORT_FILE_NAME ${OGRE_BINARY_DIR}/include/OgreHlmsPrerequisites.h)
+ 
+ # install 
+ ogre_config_framework(OgreHLMS)
+diff --git a/Components/Overlay/CMakeLists.txt b/Components/Overlay/CMakeLists.txt
+index 423077858..1adf64d4b 100644
+--- a/Components/Overlay/CMakeLists.txt
++++ b/Components/Overlay/CMakeLists.txt
+@@ -15,7 +15,7 @@ PROJECT(OgreOverlay)
+ 
+ # define header and source files for the library
+ file(GLOB HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h")
+-list(APPEND HEADER_FILES ${CMAKE_BINARY_DIR}/include/OgreOverlayPrerequisites.h)
++list(APPEND HEADER_FILES ${OGRE_BINARY_DIR}/include/OgreOverlayPrerequisites.h)
+ file(GLOB SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+ 
+ # setup target
+@@ -29,7 +29,7 @@ target_include_directories(OgreOverlay PUBLIC
+ 
+ generate_export_header(OgreOverlay 
+     EXPORT_MACRO_NAME _OgreOverlayExport
+-    EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/include/OgreOverlayPrerequisites.h)
++    EXPORT_FILE_NAME ${OGRE_BINARY_DIR}/include/OgreOverlayPrerequisites.h)
+ 
+ # install 
+ ogre_config_framework(OgreOverlay)
+diff --git a/Components/Property/CMakeLists.txt b/Components/Property/CMakeLists.txt
+index 4367781bd..d7a3844b3 100644
+--- a/Components/Property/CMakeLists.txt
++++ b/Components/Property/CMakeLists.txt
+@@ -16,7 +16,7 @@ PROJECT(OgreProperty)
+ # define header and source files for the library
+ set (HEADER_FILES
+ 	include/OgreProperty.h
+-	${CMAKE_BINARY_DIR}/include/OgrePropertyPrerequisites.h
++	${OGRE_BINARY_DIR}/include/OgrePropertyPrerequisites.h
+ )
+ 
+ set (SOURCE_FILES
+@@ -41,7 +41,7 @@ target_include_directories(OgreProperty PUBLIC
+ 
+ generate_export_header(OgreProperty 
+     EXPORT_MACRO_NAME _OgrePropertyExport
+-    EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/include/OgrePropertyPrerequisites.h)
++    EXPORT_FILE_NAME ${OGRE_BINARY_DIR}/include/OgrePropertyPrerequisites.h)
+ 
+ # install 
+ ogre_config_framework(OgreProperty)
+diff --git a/Components/Python/CMakeLists.txt b/Components/Python/CMakeLists.txt
+index ac449f325..de49e7b37 100644
+--- a/Components/Python/CMakeLists.txt
++++ b/Components/Python/CMakeLists.txt
+@@ -25,7 +25,7 @@ macro(ogre_python_module target)
+     set_target_properties(${SWIG_MODULE_${target}_REAL_NAME} PROPERTIES 
+                         DEBUG_POSTFIX "")
+     install(TARGETS ${SWIG_MODULE_${target}_REAL_NAME} LIBRARY DESTINATION ${PYTHON_SITE_PACKAGES})
+-    install(FILES ${CMAKE_BINARY_DIR}/Components/Python/${target}.py DESTINATION ${PYTHON_SITE_PACKAGES})
++    install(FILES ${OGRE_BINARY_DIR}/Components/Python/${target}.py DESTINATION ${PYTHON_SITE_PACKAGES})
+ endmacro()
+ 
+ if(MSVC)
+diff --git a/Components/RTShaderSystem/CMakeLists.txt b/Components/RTShaderSystem/CMakeLists.txt
+index a1e097952..26810b1ed 100644
+--- a/Components/RTShaderSystem/CMakeLists.txt
++++ b/Components/RTShaderSystem/CMakeLists.txt
+@@ -13,8 +13,8 @@ PROJECT(OgreRTShaderSystem)
+ 
+ file(GLOB HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h")
+ list(APPEND HEADER_FILES 
+-    ${CMAKE_BINARY_DIR}/include/OgreRTShaderExports.h 
+-    ${CMAKE_BINARY_DIR}/include/OgreRTShaderConfig.h)
++    ${OGRE_BINARY_DIR}/include/OgreRTShaderExports.h 
++    ${OGRE_BINARY_DIR}/include/OgreRTShaderConfig.h)
+ file(GLOB SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+ 
+ get_native_precompiled_header(OgreRTShaderSystem)
+@@ -31,7 +31,7 @@ add_native_precompiled_header(OgreRTShaderSystem "${CMAKE_CURRENT_SOURCE_DIR}/sr
+ 
+ generate_export_header(OgreRTShaderSystem 
+     EXPORT_MACRO_NAME _OgreRTSSExport
+-    EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/include/OgreRTShaderExports.h)
++    EXPORT_FILE_NAME ${OGRE_BINARY_DIR}/include/OgreRTShaderExports.h)
+ 
+ ogre_config_framework(OgreRTShaderSystem)
+ ogre_config_component(OgreRTShaderSystem)
+diff --git a/Components/Volume/CMakeLists.txt b/Components/Volume/CMakeLists.txt
+index 64ae80ade..19afb917a 100644
+--- a/Components/Volume/CMakeLists.txt
++++ b/Components/Volume/CMakeLists.txt
+@@ -15,7 +15,7 @@ PROJECT(OgreVolume)
+ 
+ # define header and source files for the library
+ file(GLOB HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h")
+-list(APPEND HEADER_FILES ${CMAKE_BINARY_DIR}/include/OgreVolumePrerequisites.h)
++list(APPEND HEADER_FILES ${OGRE_BINARY_DIR}/include/OgreVolumePrerequisites.h)
+ file(GLOB SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+ 
+ # setup target
+@@ -28,7 +28,7 @@ target_include_directories(OgreVolume PUBLIC
+ 
+ generate_export_header(OgreVolume 
+     EXPORT_MACRO_NAME _OgreVolumeExport
+-    EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/include/OgreVolumePrerequisites.h)
++    EXPORT_FILE_NAME ${OGRE_BINARY_DIR}/include/OgreVolumePrerequisites.h)
+ 
+ # install 
+ ogre_config_framework(OgreVolume)
+diff --git a/OgreMain/CMakeLists.txt b/OgreMain/CMakeLists.txt
+index 9446efefd..6d6a3fea5 100644
+--- a/OgreMain/CMakeLists.txt
++++ b/OgreMain/CMakeLists.txt
+@@ -16,8 +16,8 @@ PROJECT(OgreMain)
+ # define header and source files for the library
+ file(GLOB HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h")
+ list(APPEND HEADER_FILES
+-    ${CMAKE_BINARY_DIR}/include/OgreBuildSettings.h
+-    ${CMAKE_BINARY_DIR}/include/OgreExports.h)
++    ${OGRE_BINARY_DIR}/include/OgreBuildSettings.h
++    ${OGRE_BINARY_DIR}/include/OgreExports.h)
+ 
+ file(GLOB SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+ 
+@@ -182,7 +182,7 @@ generate_export_header(OgreMain
+     EXPORT_MACRO_NAME _OgreExport
+     NO_EXPORT_MACRO_NAME _OgrePrivate
+     DEPRECATED_MACRO_NAME OGRE_DEPRECATED
+-    EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/include/OgreExports.h)
++    EXPORT_FILE_NAME ${OGRE_BINARY_DIR}/include/OgreExports.h)
+ 
+ target_include_directories(OgreMain PUBLIC 
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>" 
+diff --git a/PlugIns/BSPSceneManager/CMakeLists.txt b/PlugIns/BSPSceneManager/CMakeLists.txt
+index 7c1051851..598e23c0d 100644
+--- a/PlugIns/BSPSceneManager/CMakeLists.txt
++++ b/PlugIns/BSPSceneManager/CMakeLists.txt
+@@ -10,14 +10,14 @@
+ # Configure BSP SceneManager build
+ 
+ file(GLOB HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h")
+-list(APPEND HEADER_FILES ${CMAKE_BINARY_DIR}/include/OgreBspPrerequisites.h)
++list(APPEND HEADER_FILES ${OGRE_BINARY_DIR}/include/OgreBspPrerequisites.h)
+ file(GLOB SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+ 
+ add_library(Plugin_BSPSceneManager ${OGRE_LIB_TYPE} ${HEADER_FILES} ${SOURCE_FILES})
+ target_link_libraries(Plugin_BSPSceneManager OgreMain)
+ generate_export_header(Plugin_BSPSceneManager 
+     EXPORT_MACRO_NAME _OgreBspPluginExport
+-    EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/include/OgreBspPrerequisites.h)
++    EXPORT_FILE_NAME ${OGRE_BINARY_DIR}/include/OgreBspPrerequisites.h)
+ 
+ target_include_directories(Plugin_BSPSceneManager PUBLIC 
+     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+diff --git a/PlugIns/EXRCodec/CMakeLists.txt b/PlugIns/EXRCodec/CMakeLists.txt
+index 0fc704e4d..71fd6dc00 100644
+--- a/PlugIns/EXRCodec/CMakeLists.txt
++++ b/PlugIns/EXRCodec/CMakeLists.txt
+@@ -8,7 +8,7 @@
+ #-------------------------------------------------------------------
+ 
+ file(GLOB HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h")
+-list(APPEND HEADER_FILES ${CMAKE_BINARY_DIR}/include/OgreEXRCodecExports.h)
++list(APPEND HEADER_FILES ${OGRE_BINARY_DIR}/include/OgreEXRCodecExports.h)
+ file(GLOB SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+ 
+ add_library(Codec_EXR ${OGRE_LIB_TYPE} ${HEADER_FILES} ${SOURCE_FILES})
+@@ -22,5 +22,5 @@ ogre_config_framework(Codec_EXR)
+ ogre_config_plugin(Codec_EXR)
+ generate_export_header(Codec_EXR 
+     EXPORT_MACRO_NAME _OgreEXRPluginExport
+-    EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/include/OgreEXRCodecExports.h)
++    EXPORT_FILE_NAME ${OGRE_BINARY_DIR}/include/OgreEXRCodecExports.h)
+ install(FILES ${HEADER_FILES} DESTINATION include/OGRE/Plugins/EXRCodec)
+diff --git a/PlugIns/FreeImageCodec/CMakeLists.txt b/PlugIns/FreeImageCodec/CMakeLists.txt
+index c7c629961..73ce807f2 100644
+--- a/PlugIns/FreeImageCodec/CMakeLists.txt
++++ b/PlugIns/FreeImageCodec/CMakeLists.txt
+@@ -8,7 +8,7 @@
+ #-------------------------------------------------------------------
+ 
+ file(GLOB HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h")
+-list(APPEND HEADER_FILES ${CMAKE_BINARY_DIR}/include/OgreFreeImageCodecExports.h)
++list(APPEND HEADER_FILES ${OGRE_BINARY_DIR}/include/OgreFreeImageCodecExports.h)
+ set(SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/OgreFreeImageCodec.cpp")
+ 
+ add_definitions(-DFREEIMAGE_LIB)
+@@ -28,5 +28,5 @@ ogre_config_framework(Codec_FreeImage)
+ ogre_config_plugin(Codec_FreeImage)
+ generate_export_header(Codec_FreeImage 
+     EXPORT_MACRO_NAME _OgreFreeImageCodecExport
+-    EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/include/OgreFreeImageCodecExports.h)
++    EXPORT_FILE_NAME ${OGRE_BINARY_DIR}/include/OgreFreeImageCodecExports.h)
+ install(FILES ${HEADER_FILES} DESTINATION include/OGRE/Plugins/FreeImageCodec)
+diff --git a/PlugIns/OctreeSceneManager/CMakeLists.txt b/PlugIns/OctreeSceneManager/CMakeLists.txt
+index a31eabca3..37d7070c4 100644
+--- a/PlugIns/OctreeSceneManager/CMakeLists.txt
++++ b/PlugIns/OctreeSceneManager/CMakeLists.txt
+@@ -10,7 +10,7 @@
+ # Configure Octree SceneManager build
+ 
+ file(GLOB HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h")
+-list(APPEND HEADER_FILES ${CMAKE_BINARY_DIR}/include/OgreOctreePrerequisites.h)
++list(APPEND HEADER_FILES ${OGRE_BINARY_DIR}/include/OgreOctreePrerequisites.h)
+ file(GLOB SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+ 
+ add_library(Plugin_OctreeSceneManager ${OGRE_LIB_TYPE} ${HEADER_FILES} ${SOURCE_FILES})
+@@ -21,7 +21,7 @@ target_include_directories(Plugin_OctreeSceneManager PUBLIC
+ 
+ generate_export_header(Plugin_OctreeSceneManager 
+     EXPORT_MACRO_NAME _OgreOctreePluginExport
+-    EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/include/OgreOctreePrerequisites.h)
++    EXPORT_FILE_NAME ${OGRE_BINARY_DIR}/include/OgreOctreePrerequisites.h)
+ 
+ ogre_config_framework(Plugin_OctreeSceneManager)
+ ogre_config_plugin(Plugin_OctreeSceneManager)
+diff --git a/PlugIns/OctreeZone/CMakeLists.txt b/PlugIns/OctreeZone/CMakeLists.txt
+index 9ebdaaa18..d7c29ed76 100644
+--- a/PlugIns/OctreeZone/CMakeLists.txt
++++ b/PlugIns/OctreeZone/CMakeLists.txt
+@@ -10,7 +10,7 @@
+ # Configure OctreeZone SceneManager build
+ 
+ file(GLOB HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h")
+-list(APPEND HEADER_FILES ${CMAKE_BINARY_DIR}/include/OgreOctreeZonePrerequisites.h)
++list(APPEND HEADER_FILES ${OGRE_BINARY_DIR}/include/OgreOctreeZonePrerequisites.h)
+ file(GLOB SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+ 
+ add_library(Plugin_OctreeZone ${OGRE_LIB_TYPE} ${HEADER_FILES} ${SOURCE_FILES})
+@@ -21,7 +21,7 @@ target_include_directories(Plugin_OctreeZone PUBLIC
+ 
+ generate_export_header(Plugin_OctreeZone 
+     EXPORT_MACRO_NAME _OgreOctreeZonePluginExport
+-    EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/include/OgreOctreeZonePrerequisites.h)
++    EXPORT_FILE_NAME ${OGRE_BINARY_DIR}/include/OgreOctreeZonePrerequisites.h)
+ 
+ ogre_config_framework(Plugin_OctreeZone)
+ 
+diff --git a/PlugIns/PCZSceneManager/CMakeLists.txt b/PlugIns/PCZSceneManager/CMakeLists.txt
+index 4b5721fd2..6174c0121 100644
+--- a/PlugIns/PCZSceneManager/CMakeLists.txt
++++ b/PlugIns/PCZSceneManager/CMakeLists.txt
+@@ -10,7 +10,7 @@
+ # Configure PCZ SceneManager build
+ 
+ file(GLOB HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h")
+-list(APPEND HEADER_FILES ${CMAKE_BINARY_DIR}/include/OgrePCZPrerequisites.h)
++list(APPEND HEADER_FILES ${OGRE_BINARY_DIR}/include/OgrePCZPrerequisites.h)
+ file(GLOB SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+ 
+ add_library(Plugin_PCZSceneManager ${OGRE_LIB_TYPE} ${HEADER_FILES} ${SOURCE_FILES})
+@@ -21,7 +21,7 @@ target_include_directories(Plugin_PCZSceneManager PUBLIC
+ 
+ generate_export_header(Plugin_PCZSceneManager 
+     EXPORT_MACRO_NAME _OgrePCZPluginExport
+-    EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/include/OgrePCZPrerequisites.h)
++    EXPORT_FILE_NAME ${OGRE_BINARY_DIR}/include/OgrePCZPrerequisites.h)
+     
+ ogre_config_framework(Plugin_PCZSceneManager)
+ ogre_config_plugin(Plugin_PCZSceneManager)
+diff --git a/PlugIns/ParticleFX/CMakeLists.txt b/PlugIns/ParticleFX/CMakeLists.txt
+index 9519d6cf4..fffa351fd 100644
+--- a/PlugIns/ParticleFX/CMakeLists.txt
++++ b/PlugIns/ParticleFX/CMakeLists.txt
+@@ -10,7 +10,7 @@
+ # Configure BSP SceneManager build
+ 
+ file(GLOB HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h")
+-list(APPEND HEADER_FILES ${CMAKE_BINARY_DIR}/include/OgreParticleFXPrerequisites.h)
++list(APPEND HEADER_FILES ${OGRE_BINARY_DIR}/include/OgreParticleFXPrerequisites.h)
+ file(GLOB SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+ 
+ add_library(Plugin_ParticleFX ${OGRE_LIB_TYPE} ${HEADER_FILES} ${SOURCE_FILES})
+@@ -22,7 +22,7 @@ target_include_directories(Plugin_ParticleFX PUBLIC
+ 
+ generate_export_header(Plugin_ParticleFX 
+     EXPORT_MACRO_NAME _OgreParticleFXExport
+-    EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/include/OgreParticleFXPrerequisites.h)
++    EXPORT_FILE_NAME ${OGRE_BINARY_DIR}/include/OgreParticleFXPrerequisites.h)
+ 
+ ogre_config_framework(Plugin_ParticleFX)
+ 
+diff --git a/PlugIns/STBICodec/CMakeLists.txt b/PlugIns/STBICodec/CMakeLists.txt
+index 0953ca612..83045f670 100644
+--- a/PlugIns/STBICodec/CMakeLists.txt
++++ b/PlugIns/STBICodec/CMakeLists.txt
+@@ -8,7 +8,7 @@
+ #-------------------------------------------------------------------
+ 
+ file(GLOB HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h")
+-list(APPEND HEADER_FILES ${CMAKE_BINARY_DIR}/include/OgreSTBICodecExports.h)
++list(APPEND HEADER_FILES ${OGRE_BINARY_DIR}/include/OgreSTBICodecExports.h)
+ set(SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/OgreSTBICodec.cpp")
+ 
+ if(UNIX)
+@@ -35,5 +35,5 @@ ogre_config_framework(Codec_STBI)
+ ogre_config_plugin(Codec_STBI)
+ generate_export_header(Codec_STBI 
+     EXPORT_MACRO_NAME _OgreSTBICodecExport
+-    EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/include/OgreSTBICodecExports.h)
++    EXPORT_FILE_NAME ${OGRE_BINARY_DIR}/include/OgreSTBICodecExports.h)
+ install(FILES ${HEADER_FILES} DESTINATION include/OGRE/Plugins/STBICodec)
+diff --git a/RenderSystems/GLES2/CMakeLists.txt b/RenderSystems/GLES2/CMakeLists.txt
+index bd593d944..fe41ac66b 100644
+--- a/RenderSystems/GLES2/CMakeLists.txt
++++ b/RenderSystems/GLES2/CMakeLists.txt
+@@ -19,8 +19,8 @@ macro_log_feature(HLSL2GLSL_FOUND "HLSL2GLSL" "HLSL2GLSL" "http://hlsl2glslfork.
+ 
+ file(GLOB HEADER_FILES "include/*.h")
+ list(APPEND HEADER_FILES
+-    ${CMAKE_BINARY_DIR}/include/OgreGLES2Exports.h
+-    ${CMAKE_BINARY_DIR}/include/OgreGLES2Config.h)
++    ${OGRE_BINARY_DIR}/include/OgreGLES2Exports.h
++    ${OGRE_BINARY_DIR}/include/OgreGLES2Config.h)
+ file(GLOB SOURCE_FILES "src/*.cpp")
+ list(APPEND SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/glesw.c")
+ 
+@@ -84,7 +84,7 @@ endif ()
+ 
+ generate_export_header(RenderSystem_GLES2 
+     EXPORT_MACRO_NAME _OgreGLES2Export
+-    EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/include/OgreGLES2Exports.h)
++    EXPORT_FILE_NAME ${OGRE_BINARY_DIR}/include/OgreGLES2Exports.h)
+ 
+ ogre_config_plugin(RenderSystem_GLES2)
+ 
+diff --git a/RenderSystems/GLSupport/CMakeLists.txt b/RenderSystems/GLSupport/CMakeLists.txt
+index 8026d1af0..8b34fc03c 100644
+--- a/RenderSystems/GLSupport/CMakeLists.txt
++++ b/RenderSystems/GLSupport/CMakeLists.txt
+@@ -85,7 +85,7 @@ elseif (UNIX)
+ endif ()
+ 
+ file(GLOB GLSUPPORT_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h")
+-set(GLSUPPORT_HEADERS ${GLSUPPORT_HEADERS} ${CMAKE_BINARY_DIR}/include/OgreGLSupportPrerequisites.h PARENT_SCOPE)
++set(GLSUPPORT_HEADERS ${GLSUPPORT_HEADERS} ${OGRE_BINARY_DIR}/include/OgreGLSupportPrerequisites.h PARENT_SCOPE)
+ 
+ file(GLOB GLSL_SOURCES src/GLSL/*.cpp)
+ 
+@@ -112,7 +112,7 @@ target_include_directories(OgreGLSupport PUBLIC
+ set_property(TARGET OgreGLSupport PROPERTY POSITION_INDEPENDENT_CODE ON)
+ generate_export_header(OgreGLSupport 
+     EXPORT_MACRO_NAME _OgreGLExport
+-    EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/include/OgreGLSupportPrerequisites.h)
++    EXPORT_FILE_NAME ${OGRE_BINARY_DIR}/include/OgreGLSupportPrerequisites.h)
+ 
+ if (APPLE)
+     set_target_properties(OgreGLSupport PROPERTIES LINK_FLAGS "-framework Cocoa -framework OpenGL")
+diff --git a/Samples/Browser/CMakeLists.txt b/Samples/Browser/CMakeLists.txt
+index 5d68b6aac..7df17cee9 100644
+--- a/Samples/Browser/CMakeLists.txt
++++ b/Samples/Browser/CMakeLists.txt
+@@ -62,7 +62,7 @@ if (WINDOWS_STORE OR WINDOWS_PHONE)
+     if( NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/Media")
+         # Get OS dependent path to use in `execute_process`
+         file(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/Media" link)
+-        file(TO_NATIVE_PATH "${CMAKE_SOURCE_DIR}/Samples/Media" target)
++        file(TO_NATIVE_PATH "${OGRE_SOURCE_DIR}/Samples/Media" target)
+         execute_process( COMMAND cmd.exe /c mklink /J ${link} ${target})
+     endif()
+ 
+@@ -82,10 +82,10 @@ if (WINDOWS_STORE OR WINDOWS_PHONE)
+         ${OGRE_BINARY_DIR}/inst/bin/release/samples.cfg
+         ${OGRE_BINARY_DIR}/inst/bin/release/tests.cfg
+ 
+-        ${CMAKE_SOURCE_DIR}/Samples/Common/misc.winrt/Logo.png
+-        ${CMAKE_SOURCE_DIR}/Samples/Common/misc.winrt/SmallLogo.png
+-        ${CMAKE_SOURCE_DIR}/Samples/Common/misc.winrt/StoreLogo.png
+-        ${CMAKE_SOURCE_DIR}/Samples/Common/misc.winrt/SplashScreen.png
++        ${OGRE_SOURCE_DIR}/Samples/Common/misc.winrt/Logo.png
++        ${OGRE_SOURCE_DIR}/Samples/Common/misc.winrt/SmallLogo.png
++        ${OGRE_SOURCE_DIR}/Samples/Common/misc.winrt/StoreLogo.png
++        ${OGRE_SOURCE_DIR}/Samples/Common/misc.winrt/SplashScreen.png
+ 
+         DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+     )
+diff --git a/Samples/Emscripten/CMakeLists.txt b/Samples/Emscripten/CMakeLists.txt
+index 6643f620c..b21a18d65 100644
+--- a/Samples/Emscripten/CMakeLists.txt
++++ b/Samples/Emscripten/CMakeLists.txt
+@@ -14,17 +14,17 @@ add_executable(EmscriptenSample Main.cpp Context.cpp)
+ target_link_libraries(EmscriptenSample OgreBites ${OGRE_LIBRARIES})
+ 
+ file(COPY
+-    "${CMAKE_SOURCE_DIR}/Samples/Emscripten/media" 
++    "${OGRE_SOURCE_DIR}/Samples/Emscripten/media" 
+     DESTINATION "${CMAKE_BINARY_DIR}/bin/")
+     
+ file(COPY
+-    "${CMAKE_SOURCE_DIR}/Samples/Media/materials/textures/ribbonband.png"
+-    "${CMAKE_SOURCE_DIR}/Samples/Media/materials/textures/rockwall.tga"
+-    "${CMAKE_SOURCE_DIR}/Samples/Media/packs/SdkTrays.zip" 
+-    "${CMAKE_SOURCE_DIR}/Samples/Media/packs/Sinbad.zip"
++    "${OGRE_SOURCE_DIR}/Samples/Media/materials/textures/ribbonband.png"
++    "${OGRE_SOURCE_DIR}/Samples/Media/materials/textures/rockwall.tga"
++    "${OGRE_SOURCE_DIR}/Samples/Media/packs/SdkTrays.zip" 
++    "${OGRE_SOURCE_DIR}/Samples/Media/packs/Sinbad.zip"
+     DESTINATION ${MEDIA_DIR})
+ 
+ file(COPY 
+-    "${CMAKE_SOURCE_DIR}/Samples/Media/RTShaderLib/GLSL"
+-    "${CMAKE_SOURCE_DIR}/Samples/Media/RTShaderLib/GLSLES"
++    "${OGRE_SOURCE_DIR}/Samples/Media/RTShaderLib/GLSL"
++    "${OGRE_SOURCE_DIR}/Samples/Media/RTShaderLib/GLSLES"
+     DESTINATION "${MEDIA_DIR}/RTShaderLib/")
